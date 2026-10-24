@@ -1,6 +1,40 @@
-Year Sales
-2019 100
-2020 150
-2021 200
-2022 250
-2023 300
+#multicollinearity and vif
+library(tidyverse)
+mydata=mtcars%>%select(mpg,cyl,disp,hp,wt)
+head(mydata)
+library(corrplot)
+corrplot(cor(mydata),method="number")
+mlr=lm(mpg~.,data=mydata)
+mlr
+calc_vif <- function(mlr) {
+  predictors <- attr(terms(mlr), "term.labels")
+  mf <- model.frame(mlr)
+  
+  vif_vals <- sapply(predictors, function(v) {
+    f <- as.formula(
+      paste(v, "~", paste(setdiff(predictors, v), collapse = "+"))
+    )
+    
+    r2 <- summary(lm(f, data = mf))$r.squared
+    1 / (1 - r2)
+  })
+  
+  data.frame(
+    Variables = predictors,
+    Tolerance = round(1 / vif_vals, 4),
+    VIF = round(vif_vals, 4),
+    row.names = NULL
+  )
+}
+
+calc_vif(mlr)
+
+x=model.matrix(mlr)[,-1]
+R=cor(x)
+eig=eigen(R)$values
+ci=sqrt(max(eig)/eig)
+data.frame(
+  Eigen_value=round(eig,4),
+  CI=round(ci,4)
+)
+
